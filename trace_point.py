@@ -35,41 +35,24 @@ while True:
         summ_average_row_ind_y = 0  # сумма всех средних индексов по колонне
         black_row_amount_y = 0  # количесвто колонн где встречаются черные пиксели
 
+        sum_rows = np.sum(a, axis = 1)
+        sum = 0
+        am = 0
         for i in range(rows):
-            for j in range(columns):
-                if a[i][j] == 0:
-                    # print('row:', i, 'column:', j)
-                    summ_black_ind_x += j  # считаем для i строки сумму индексов черных пикселей
-                    black_amount_x += 1  # считаем для i строки количество черных пискелей
-                else:
-                    average_black_ind_x = 0
-            if summ_black_ind_x != 0:
-                summ_average_row_ind_x += math.ceil(summ_black_ind_x / black_amount_x)  # сумма всех средних индексов
-            if black_amount_x != 0:
-                black_row_amount_x += 1
-                average_black_ind_x = math.ceil(summ_average_row_ind_x / black_row_amount_x)  # финальный средний индекс по иксу
-            summ_black_ind_x = 0  # обнуляем значение для следующей строки
-            black_amount_x = 0  # обнуляем значение для следующей строки
+            if (255*rows - sum_rows[i]) != 0:
+                sum += i
+                am += 1
+        crow = sum//am
 
-        # ищем среднее значение в колоннах, по факту это высота, те игрек, на самом деле выходит номер ряда
-        for k in range(columns):
-            for h in range(rows):
-                if a[h][k] == 0:
-                    # print('row:', h, 'column:', k)
-                    summ_black_ind_y += h  # считаем для k колонны сумму индексов черных пикселей
-                    black_amount_y += 1  # считаем для k колонны количество черных пискелей
-                else:
-                    average_black_ind_y = 0
-            if summ_black_ind_y != 0:
-                summ_average_row_ind_y += math.ceil(summ_black_ind_y / black_amount_y)  # сумма всех средних индексов
+        sum = 0
+        am = 0
+        for i in range(coloumns):
+            if (255*rows - sum_coloumns[i]) != 0:
+                sum += i
+                am += 1
+        ccol = sum//am
 
-            if black_amount_y != 0:
-                black_row_amount_y += 1
-                average_black_ind_y = math.ceil(summ_average_row_ind_y / black_row_amount_y)  # финальный средний индекс по игреку
-            summ_black_ind_y = 0  # обнуляем значение для следующей колонны
-            black_amount_y = 0  # обнуляем значение для следующей колонны
-
-        print(average_black_ind_y, average_black_ind_x)  # ряд(высота - у) и колонна(сторона - х)
+        print(crow, ccol)  # ряд(высота - у) и колонна(сторона - х)
 
     if cv2.waitKey(1) == ord('q'):
          break
