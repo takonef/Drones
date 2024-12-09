@@ -29,7 +29,7 @@ columns = a_size[1]
 #ищем среднее значение в строках, те х, но на самом деле выходит номер колонны
 for i in range(rows):
     for j in range(columns):
-        if a[i][j] == 255:
+        if a[i][j] == 0:
             #print('row:', i, 'column:', j)
             summ_black_ind_x += j #считаем для i строки сумму индексов черных пикселей
             black_amount_x += 1 #считаем для i строки количество черных пискелей
