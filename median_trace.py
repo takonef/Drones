@@ -74,8 +74,13 @@ while True:
 
       
     cv2.imshow('live from your pc :)', bw_frame)
-    if cv2.waitKey(1) == ord('q'):
-         break
+    key = cv2.waitKey(1)
+    if key == ord('q'):
+        break
+    if key == ord('m'):
+        thresh -= 10
+    if key == ord('p'):
+        thresh += 10
 
 
 bw_frame.release()
