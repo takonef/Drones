@@ -17,6 +17,7 @@ def get_black_point(frame):
     columns = a_size[1]
 
     gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    #TODO сделать регулировку парараметров у blure и adaptiveThreshold
     blurred_frame = cv2.GaussianBlur(gray_frame, (19, 19), 0)
     bw_frame = cv2.adaptiveThreshold(blurred_frame, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 61, 15)
     a = np.array(bw_frame)
