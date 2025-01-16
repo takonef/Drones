@@ -16,6 +16,7 @@ if __name__ == "__main__":
     ←a      d→     k-↓
         s↓"""
     )
+    is_control_by_PID = False
     pioneer_mini = Pioneer()
     camera = Camera()
     min_v = 1300
@@ -32,24 +33,58 @@ if __name__ == "__main__":
             if frame is None:
                 continue
 
-            xc, yc, _ = frame.shape
+            yc, xc, _ = frame.shape
+            yc //= 2
+            xc //= 2
 
-            ccol, crow = get_black_point(frame)
+            # TODO: понять где центр (не совпадает то, что возвращает функция get_black_point, если всё белое и центр через frame.shape, разница в 1 еденицу)
+            yc -= 1
+            xc -= 1
 
-            dx = xc - ccol
-            dy = yc - crow
+
+            # print("xc, yx", xc, yc)
+
+
+            ccol, crow, frame_after_thresh = get_black_point(frame)
+
+            # print("cclol, crow", ccol, crow)
+
+            dx = -(xc - ccol)
+            dy = -(yc - crow)
+
+
             print("dx, dy", dx, dy)
-            dV_max = 400
+
+
+            color_for_arrow = (255, 0, 0)
+            if is_control_by_PID:
+                color_for_arrow = (0, 255, 0)
+            frame = cv2.arrowedLine(frame, (xc, yc), (xc + dx, yc + dy), color_for_arrow, 2)
+
+
+            dV_max = 200
             dVx = dV_max * (dx / xc)
-            dVy = dV_max * (dy / yc)
+            dVy = dV_max * (dy / xc)
 
-            print("dVx, dVy", dVx, dVy)
+            limit = 100
+            if dVx > limit:
+                dVx = limit
+            if dVx < -limit:
+                dVx = -limit
 
-            if dx < 70:
+            if dVy > limit:
+                dVy = limit
+            if dVy < -limit:
+                dVy = -limit
+
+            # print("dVx, dVy", dVx, dVy)
+
+            if not is_control_by_PID:
                 dx = 0
             else:
                 ch_3 = 1500 + int(dVy)
                 ch_4 = 1500 + int(dVx)
+
 
 
             key = cv2.waitKey(1)
@@ -88,9 +123,11 @@ if __name__ == "__main__":
                 ch_1 = 2000
             elif key == ord("k"):
                 ch_1 = 1000
+            elif key == ord("p"):
+                is_control_by_PID = not is_control_by_PID
 
+            print("ch3, ch4", ch_3, ch_4)
 
-            # print("ch3, ch4", ch_3, ch_4)
 
             pioneer_mini.send_rc_channels(
                 channel_1=ch_1,
@@ -99,7 +136,9 @@ if __name__ == "__main__":
                 channel_4=ch_4,
                 channel_5=ch_5,
             )
-            time.sleep(0.02)
+
+            cv2.imshow('live from your pc :)', frame_after_thresh)
+            cv2.imshow('without changes', frame)
     except Exception as e:
         print(e)
     finally:
