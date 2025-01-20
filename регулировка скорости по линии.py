@@ -49,10 +49,10 @@ if __name__ == "__main__":
 
 
             dV_max = 200
-            dVx = dV_max * dx
+            dVx = dV_max * (dx / (2*xc))
             
 
-            limit = 100
+            limit = 250
             if dVx > limit:
                 dVx = limit
             if dVx < -limit:
