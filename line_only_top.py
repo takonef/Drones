@@ -5,7 +5,7 @@ import math
 from itertools import count
 
 
-def get_black_line(frame):
+def get_black_line(frame, nearby_pixels, edge):
     if frame is None:
         return
 
@@ -15,7 +15,7 @@ def get_black_line(frame):
     gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     # TODO сделать регулировку парараметров у blure и adaptiveThreshold
     blurred_frame = cv2.GaussianBlur(gray_frame, (19, 19), 0)
-    bw_frame = cv2.adaptiveThreshold(blurred_frame, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 61, 15)
+    bw_frame = cv2.adaptiveThreshold(blurred_frame, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, nearby_pixels, edge)
 
     # верхняя часть массива
     sum_columns_top = np.sum(bw_frame[0 : height // 2], axis=0)
@@ -61,4 +61,4 @@ def get_black_line(frame):
     color_for_arrow = (0, 0, 255)
     bw_frame = cv2.arrowedLine(bw_frame, (start_circle_x, start_circle_y), (target_circle_x, target_circle_y), color_for_arrow, 2)
 
-    return (bw_frame, target_circle_x - width // 2, math.atan2(target_circle_x - start_circle_x, height//4))
+    return (target_circle_x, bw_frame, target_circle_x - width // 2, math.atan2(target_circle_x - start_circle_x, height//4))
