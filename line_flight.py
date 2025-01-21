@@ -40,37 +40,40 @@ if __name__ == "__main__":
             yc -= 1
             xc -= 1
 
-
             # print("xc, yx", xc, yc)
 
-
-            frame_after_thresh, dx = get_black_line(frame)
+            frame_after_thresh, dx_center, dangle = get_black_line(frame)
 
             # print("ccol, crow", ccol, crow)
 
+            dV_max = 150
+            dVx = dV_max * (dx_center / xc)
+            print(dangle)
 
-            dV_max = 300
-            dVx = dV_max * (dx / xc)
-            
 
-            limit = 300
+            dVrot_k = 250
+
+
+            limit = 80
             if dVx > limit:
                 dVx = limit
-                print("bah")
+               # print("bah")
             if dVx < -limit:
                 dVx = -limit
-                print("bah")
-
-            
+               # print("bah")
 
             # print("dVx, dVy", dVx, dVy)
 
             if not is_control_by_PID:
                 dx = 0
+                color = [0, 0, 255]
             else:
-                ch_2 = 1500 + int(dVx)
-                ch_3 = 1350
-
+                ch_2 = 1500 - int(dVrot_k * dangle)
+                ch_4 = 1500 + int(dVx)
+                ch_3 = 1430  #1350
+                #ch_3 = 1500
+                color = [0, 255, 0]
+                frame = cv2.circle(frame, (10, 10), 10, color, cv2.FILLED)
 
 
             key = cv2.waitKey(1)
@@ -112,8 +115,7 @@ if __name__ == "__main__":
             elif key == ord("p"):
                 is_control_by_PID = not is_control_by_PID
 
-            print("ch3, ch2", ch_3, ch_2)
-
+           # print("ch3, ch2", ch_3, ch_2)
 
             pioneer_mini.send_rc_channels(
                 channel_1=ch_1,
