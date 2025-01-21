@@ -5,6 +5,9 @@ import time
 # from line_trace_top_bottom import *
 from line_only_top import *
 
+
+nearby_pixels = 61
+edge = 15
 if __name__ == "__main__":
     print(
         """
@@ -18,6 +21,7 @@ if __name__ == "__main__":
         s↓"""
     )
     is_control_by_PID = False
+    centered = False
     pioneer_mini = Pioneer()
     camera = Camera()
     min_v = 1300
@@ -40,34 +44,32 @@ if __name__ == "__main__":
             yc -= 1
             xc -= 1
 
-            # print("xc, yx", xc, yc)
-
-            frame_after_thresh, dx_center, dangle = get_black_line(frame)
-
-            # print("ccol, crow", ccol, crow)
-
-            dV_max = 150
+            target_circle_x, frame_after_thresh, dx_center, dangle = get_black_line(frame, nearby_pixels, edge)         
+        
+            dV_max = 300
             dVx = dV_max * (dx_center / xc)
-            print(dangle)
+            # print(dangle)
 
 
             dVrot_k = 250
 
 
-            limit = 80
+            limit = 170
             if dVx > limit:
                 dVx = limit
-               # print("bah")
             if dVx < -limit:
                 dVx = -limit
-               # print("bah")
-
-            # print("dVx, dVy", dVx, dVy)
 
             if not is_control_by_PID:
                 dx = 0
                 color = [0, 0, 255]
             else:
+                if target_circle_x == 0:
+                    is_control_by_PID = not is_control_by_PID
+                    print("you have reached the destination")
+                    # time.sleep(2)
+                    # pioneer_mini.land()       
+                
                 ch_2 = 1500 - int(dVrot_k * dangle)
                 ch_4 = 1500 + int(dVx)
                 ch_3 = 1430  #1350
@@ -82,6 +84,16 @@ if __name__ == "__main__":
                 cv2.destroyAllWindows()
                 pioneer_mini.land()
                 break
+
+            elif key == ord("5"):
+                nearby_pixels -= 10
+            elif key == ord("6"):
+                nearby_pixels += 10
+            elif key == ord("7"):
+                edge -= 2
+            elif key == ord("8"):
+                edge += 2
+            
             elif key == ord("1"):
                 pioneer_mini.arm()
             elif key == ord("2"):
