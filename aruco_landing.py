@@ -67,10 +67,10 @@ if __name__ == "__main__":
 
                 print("dx, dy", dx, dy)
 
-                    # color_for_arrow = (255, 0, 0)
+                color_for_arrow = (255, 0, 0)
                     # if is_control_by_PID:
                     #     color_for_arrow = (0, 255, 0)
-                    # frame = cv2.arrowedLine(frame, (xc, yc), (xc + dx, yc + dy), color_for_arrow, 2)
+                frame = cv2.arrowedLine(frame, (xc, yc), (xc + dx, yc + dy), color_for_arrow, 2)
 
                 dV_aruco = 200
                 dVx_aruco = dV_aruco * (dx / xc)
