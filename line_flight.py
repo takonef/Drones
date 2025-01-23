@@ -4,6 +4,9 @@ import numpy as np
 import time
 # from line_trace_top_bottom import *
 from line_only_top import *
+import traceback
+from aruco_detect import *
+
 
 
 nearby_pixels = 61
@@ -26,6 +29,7 @@ if __name__ == "__main__":
     camera = Camera()
     min_v = 1300
     max_v = 1700
+
     try:
         while True:
             ch_1 = 1500
@@ -34,6 +38,8 @@ if __name__ == "__main__":
             ch_4 = 1500
             ch_5 = 2000
             frame = camera.get_cv_frame()
+
+
 
             if frame is None:
                 continue
@@ -44,15 +50,24 @@ if __name__ == "__main__":
             yc -= 1
             xc -= 1
 
-            target_circle_x, frame_after_thresh, dx_center, dangle = get_black_line(frame, nearby_pixels, edge)         
-        
+            target_circle_x, frame_after_thresh, dx_center, dangle = get_black_line(frame, nearby_pixels, edge)
+
+
+
+                # print("dVx, dVy", dVx, dVy)
+            dVx_aruco, dVy_aruco, dx, dy = aruco_detected(detector, frame, xc, yc)
+            if dVx_aruco > 0 and dVy_aruco > 0:
+                color_for_arrow = (255, 0, 0)
+                frame = cv2.arrowedLine(frame, (xc, yc), (xc + dx, yc + dy), color_for_arrow, 2)
+                ch_3 = 1500 + int(dVy_aruco)
+                ch_4 = 1500 + int(dVx_aruco)
+                ch_1 = 1400 #вниз
+
             dV_max = 300
             dVx = dV_max * (dx_center / xc)
             # print(dangle)
 
-
             dVrot_k = 250
-
 
             limit = 170
             if dVx > limit:
@@ -68,15 +83,14 @@ if __name__ == "__main__":
                     is_control_by_PID = not is_control_by_PID
                     print("you have reached the destination")
                     # time.sleep(2)
-                    # pioneer_mini.land()       
-                
+                    # pioneer_mini.land()
+
                 ch_2 = 1500 - int(dVrot_k * dangle)
                 ch_4 = 1500 + int(dVx)
-                ch_3 = 1430  #1350
-                #ch_3 = 1500
+                ch_3 = 1430  # 1350
+                # ch_3 = 1500
                 color = [0, 255, 0]
                 frame = cv2.circle(frame, (10, 10), 10, color, cv2.FILLED)
-
 
             key = cv2.waitKey(1)
             if key == 27:  # esc
@@ -93,7 +107,7 @@ if __name__ == "__main__":
                 edge -= 2
             elif key == ord("8"):
                 edge += 2
-            
+
             elif key == ord("1"):
                 pioneer_mini.arm()
             elif key == ord("2"):
@@ -127,7 +141,7 @@ if __name__ == "__main__":
             elif key == ord("p"):
                 is_control_by_PID = not is_control_by_PID
 
-           # print("ch3, ch2", ch_3, ch_2)
+            # print("ch3, ch2", ch_3, ch_2)
 
             pioneer_mini.send_rc_channels(
                 channel_1=ch_1,
@@ -139,8 +153,9 @@ if __name__ == "__main__":
 
             cv2.imshow('live from your pc :)', frame_after_thresh)
             cv2.imshow('without changes', frame)
-    except Exception as e:
-        print(e)
+    except Exception:
+
+        print(traceback.format_exc())
     finally:
         time.sleep(1)
         pioneer_mini.land()
