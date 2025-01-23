@@ -4,6 +4,7 @@ import numpy as np
 import time
 # from line_trace_top_bottom import *
 from line_only_top import *
+import traceback
 
 
 aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_250)
@@ -58,18 +59,19 @@ if __name__ == "__main__":
             corners, ids, rejected = detector.detectMarkers(frame_gray)
             if ids is not None:
                 cv2.aruco.drawDetectedMarkers(frame, corners, ids)
+                print(corners[0])
+                aruco_xc = (corners[0][0][0][0] + corners[0][0][1][0] + corners[0][0][2][0] + corners[0][0][3][0]) // 4
+                aruco_yc = (corners[0][0][0][1] + corners[0][0][1][1] + corners[0][0][2][1] + corners[0][0][3][1]) // 4
 
-                aruco_xc = (corners[0][0][0] + corners[0][1][0] + corners[0][2][0] + corners[0][3][0]) // 4
-                aruco_yc = (corners[0][0][1] + corners[0][1][1] + corners[0][2][1] + corners[0][3][1]) // 4
-
-                dx = -(xc - aruco_xc)
-                dy = -(yc - aruco_yc)
+                dx = int(-(xc - aruco_xc))
+                dy = int(-(yc - aruco_yc))
 
                 print("dx, dy", dx, dy)
 
                 color_for_arrow = (255, 0, 0)
                     # if is_control_by_PID:
                     #     color_for_arrow = (0, 255, 0)
+                print( (xc, yc), (xc + dx, yc + dy))
                 frame = cv2.arrowedLine(frame, (xc, yc), (xc + dx, yc + dy), color_for_arrow, 2)
 
                 dV_aruco = 200
@@ -187,8 +189,9 @@ if __name__ == "__main__":
 
             cv2.imshow('live from your pc :)', frame_after_thresh)
             cv2.imshow('without changes', frame)
-    except Exception as e:
-        print(e)
+    except Exception:
+
+        print(traceback.format_exc())
     finally:
         time.sleep(1)
         pioneer_mini.land()
