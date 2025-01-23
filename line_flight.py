@@ -7,6 +7,7 @@ import threading
 import socket
 from line_only_top import *
 import traceback
+from aruco_detect import *
 
 global_frame = None
 
