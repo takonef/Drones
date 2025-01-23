@@ -94,9 +94,10 @@ if __name__ == "__main__":
                 counter_land = 1
                 ch_3 = 1500 + int(dVy_aruco)
                 ch_4 = 1500 + int(dVx_aruco)
-                ch_1 = 1350 #вниз
+                ch_1 = 1400 #вниз
             elif counter_land == 1:
-                pioneer_mini.land()
+                # pioneer_mini.land()
+                counter_land = 0
 
 
             dV_max = 300

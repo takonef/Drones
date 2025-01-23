@@ -67,6 +67,7 @@ if __name__ == "__main__":
                 frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 # Detect the markers
                 corners, ids, rejected = detector.detectMarkers(frame_gray)
+
                 if ids is not None:
                     cv2.aruco.drawDetectedMarkers(frame, corners, ids)
                     print(corners[0])
@@ -101,12 +102,10 @@ if __name__ == "__main__":
 
                     # print("dVx, dVy", dVx, dVy)
 
-                    counter_land = 1
                     ch_3 = 1500 + int(dVy_aruco)
                     ch_4 = 1500 + int(dVx_aruco)
                     ch_1 = 1350 #вниз
-                elif counter_land == 1:
-                    pioneer_mini.land()
+
 
 
                 dV_max = 300
