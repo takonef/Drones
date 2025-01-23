@@ -5,6 +5,11 @@ import time
 # from line_trace_top_bottom import *
 from line_only_top import *
 
+
+aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_250)
+parameters = cv2.aruco.DetectorParameters()
+detector = cv2.aruco.ArucoDetector(aruco_dict, parameters)
+
 nearby_pixels = 61
 edge = 15
 if __name__ == "__main__":
@@ -48,20 +53,11 @@ if __name__ == "__main__":
 
             target_circle_x, frame_after_thresh, dx_center, dangle = get_black_line(frame, nearby_pixels, edge)
 
-
             frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_250)
-            parameters = cv2.aruco.DetectorParameters()
-
-            # Create the ArUco detector
-            detector = cv2.aruco.ArucoDetector(aruco_dict, parameters)
             # Detect the markers
             corners, ids, rejected = detector.detectMarkers(frame_gray)
-            # Print the detected markers
-            print("Detected markers:", ids)
             if ids is not None:
                 cv2.aruco.drawDetectedMarkers(frame, corners, ids)
-                cv2.imshow('Detected Markers', frame)
 
                 aruco_xc = (corners[0][0][0] + corners[0][1][0] + corners[0][2][0] + corners[0][3][0]) // 4
                 aruco_yc = (corners[0][0][1] + corners[0][1][1] + corners[0][2][1] + corners[0][3][1]) // 4
@@ -96,7 +92,7 @@ if __name__ == "__main__":
                 counter_land = 1
                 ch_3 = 1500 + int(dVy_aruco)
                 ch_4 = 1500 + int(dVx_aruco)
-                ch_1 = 1200 #вниз
+                ch_1 = 1350 #вниз
             elif counter_land == 1:
                 pioneer_mini.land()
 
