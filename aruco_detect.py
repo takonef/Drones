@@ -8,8 +8,8 @@ detector = cv2.aruco.ArucoDetector(aruco_dict, parameters)
 def aruco_detected(detector, frame, xc, yc):
     frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     corners, ids, rejected = detector.detectMarkers(frame_gray)
-    dVy_aruco = -1
-    dVx_aruco = -1
+    dVy_aruco = None
+    dVx_aruco = None
     dx, dy = 0, 0
     if ids is not None:
         cv2.aruco.drawDetectedMarkers(frame, corners, ids)
@@ -18,7 +18,7 @@ def aruco_detected(detector, frame, xc, yc):
         dx = int(-(xc - aruco_xc))
         dy = int(-(yc - aruco_yc))
 
-        dV_aruco = 200
+        dV_aruco = 120 #200
         dVx_aruco = dV_aruco * (dx / xc)
         dVy_aruco = dV_aruco * (dy / xc)
 
@@ -33,5 +33,4 @@ def aruco_detected(detector, frame, xc, yc):
             dVy_aruco = limit
         if dVy_aruco < -limit:
             dVy_aruco = -limit
-    return (dVx_aruco, dVy_aruco, dx, dy)
-
+    return (dVx_aruco, dVy_aruco, dx, dy, ids)
