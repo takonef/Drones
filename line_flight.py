@@ -50,19 +50,16 @@ if __name__ == "__main__":
         while True:
             frame = global_frame
             print(global_frame)
-                if frame is not None:    
+            if frame is not None:
                 ch_1 = 1500
                 ch_2 = 1500
                 ch_3 = 1500
                 ch_4 = 1500
                 ch_5 = 2000
-                frame = camera.get_cv_frame()
+
+
     
-    
-    
-                if frame is None:
-                    continue
-    
+
                 yc, xc, _ = frame.shape
                 yc //= 2
                 xc //= 2
