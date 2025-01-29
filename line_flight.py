@@ -24,12 +24,20 @@ def main():
         """
     1 -- arm
     2 -- disarm
-    3 -- takeoff
+    3 -- arm, takeoff
     4 -- land
 
     ↶q  w↑  e↷    i-↑
     ←a      d→     k-↓
-        s↓"""
+        s↓
+
+    p -- change status
+    
+    5 -- line edge -1 px
+    6 -- line edge +1 px
+    7 -- thresh -1
+    8 -- thresh +1
+    """
     )
 
     pioneer_mini = Pioneer()
@@ -49,6 +57,8 @@ def main():
     # 5 -- закончилась чёрная линия во время полёта
 
     try:
+        start_marker_id = 0
+        finish_marker_id = 1
         while True:
             if global_frame is None:
                 continue
@@ -64,8 +74,6 @@ def main():
             frame_center_y, frame_center_x, _ = map(lambda x: x // 2 - 1, frame.shape)
 
             status_circle_color = (0, 0, 255) # red
-            start_marker_id = 0
-            finish_marker_id = 1
 
             min_drone_flight_height = 0.2
 
