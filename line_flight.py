@@ -1,15 +1,12 @@
-import cv2
-import numpy as np
-import time
-from pioneer_sdk import Pioneer
-from camera_pio import *
 import threading
-import socket
-from line_only_top import *
+import time
 import traceback
-from aruco_detect import *
 
-global_frame = None
+from pioneer_sdk import Pioneer
+
+from aruco_detect import *
+from camera_pio import *
+from line_only_top import fight_follow_line, change_near_by_pixels, change_edge
 
 
 def camera_start():
@@ -18,19 +15,11 @@ def camera_start():
         global_frame = get_cv_frame()
 
 
-th1 = threading.Thread(target=camera_start)
-th1.start()
-
-# def detect_aruco(detector):
+global_frame = None
 
 
-aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_250)
-parameters = cv2.aruco.DetectorParameters()
-detector = cv2.aruco.ArucoDetector(aruco_dict, parameters)
-
-nearby_pixels = 61
-edge = 15
-if __name__ == "__main__":
+def main():
+    global global_frame
     print(
         """
     1 -- arm
@@ -42,142 +31,128 @@ if __name__ == "__main__":
     ←a      d→     k-↓
         s↓"""
     )
-    is_control_by_PID = False
-    centered = False
+
     pioneer_mini = Pioneer()
-    # camera = Camera()
-    min_v = 1300
-    max_v = 1700
+
+    min_v_manual_wasd_control = 1300
+    max_v_manual_wasd_control = 1700
+
+    th1 = threading.Thread(target=camera_start)
+    th1.start()
+
+    status = 0  # 0 -- до взлёта, 1 -- до включения режима автономного пилотирования, 2 -- стабилизация над маркером старта, 3 -- полёт по линии, 4 -- найден маркер финиша в центре изображения, посадка на него, 5 -- закончилась чёрная линия во время полёта
+
     try:
         while True:
-            frame = global_frame
-            #print(global_frame)
-            if frame is not None:
-                ch_1 = 1500
-                ch_2 = 1500
-                ch_3 = 1500
-                ch_4 = 1500
-                ch_5 = 2000
+            if global_frame is None:
+                continue
 
-                yc, xc, _ = frame.shape
-                yc //= 2
-                xc //= 2
-                yc -= 1
-                xc -= 1
+            frame = np.array(global_frame)
 
-                target_circle_x, frame_after_thresh, dx_center, dangle = get_black_line(frame, nearby_pixels, edge)
+            ch_1 = 1500
+            ch_2 = 1500
+            ch_3 = 1500
+            ch_4 = 1500
+            ch_5 = 2000
 
-                # print("dVx, dVy", dVx, dVy)
+            frame_center_y, frame_center_x, _ = map(lambda x: x // 2 - 1, frame.shape)
 
+            status_circle_color = (0, 0, 255)
+            start_marker_id = 0
+            finish_marker_id = 1
 
-                dV_max = 200 #300
-                dVx = dV_max * (dx_center / xc)
-                # print(dangle)
+            min_drone_flight_height = 0.2
 
-                dVrot_k = 150 #250
+            # TODO вынести предобработку картинки с выделенной линей в отдельную функцию
+            frame_after_thresh, _, _, _, _ = fight_follow_line(global_frame, frame_center_x)
 
-                limit = 100
-                if dVx > limit:
-                    dVx = limit
-                if dVx < -limit:
-                    dVx = -limit
-
-                if not is_control_by_PID:
-                    dx = 0
-                    color = [0, 0, 255]
-                else:
-                    if target_circle_x == 0:
-                        is_control_by_PID = not is_control_by_PID
-                        print("you have reached the destination")
-                        # time.sleep(2)
-                        # pioneer_mini.land()
-
-                    ch_2 = 1500 - int(dVrot_k * dangle)
-                    ch_4 = 1500 + int(dVx)
-                    ch_3 = 1425  # 1350
-                    # ch_3 = 1500
-                    color = [0, 255, 0]
-                    frame = cv2.circle(frame, (10, 10), 10, color, cv2.FILLED)
-
-                    dVx_aruco, dVy_aruco, dx, dy, ids = aruco_detected(detector, frame, xc, yc)
-                    if dVx_aruco is not None and dVy_aruco is not None:
-                        print("marker ids", ids)
-                        # if abs(dx) < xc // 4 and abs(dy) < yc // 4:
-                        is_control_by_PID = not is_control_by_PID
-
-                    #print(dVx_aruco, dVy_aruco)
-                dVx_aruco, dVy_aruco, dx, dy, ids = aruco_detected(detector, frame, xc, yc)
-                if dVx_aruco is not None and dVy_aruco is not None:
-                    color_for_arrow = (255, 0, 0)
-                    frame = cv2.arrowedLine(frame, (xc, yc), (xc + dx, yc + dy), color_for_arrow, 2)
-                    ch_3 = 1500 + int(dVy_aruco)
-                    ch_4 = 1500 + int(dVx_aruco)
+            match status:
+                case 2:
+                    status_circle_color = (0, 255, 255)
+                    frame, ch_3, ch_4 = stabilize_at_marker(frame, frame_center_x, frame_center_y)
+                    if is_marker_in_center_area(frame, start_marker_id, frame_center_x, frame_center_y):
+                        status = 3
+                case 4:
+                    status_circle_color = (0, 255, 255)
+                    frame, ch_3, ch_4 = stabilize_at_marker(frame, frame_center_x, frame_center_y)
                     ch_1 = 1400  # вниз
-                    print(ch_1, ch_3, ch_4)
+                    if pioneer_mini.get_dist_sensor_data(get_last_received=True) < min_drone_flight_height:
+                        pioneer_mini.land()
+                        time.sleep(1)
+                        pioneer_mini.disarm()
+                case 3:
+                    status_circle_color = (0, 255, 0)
+                    frame_after_thresh, status, ch_2, ch_3, ch_4 = fight_follow_line(global_frame, frame_center_x)
+                    if is_marker_in_center_area(frame, finish_marker_id, frame_center_x, frame_center_y):
+                        status = 4
 
-                key = cv2.waitKey(1)
-                if key == 27:  # esc
-                    print("esc pressed")
-                    cv2.destroyAllWindows()
-                    pioneer_mini.land()
-                    break
+            cv2.circle(frame, (10, 10), 10, status_circle_color, cv2.FILLED)  # отрисовка статуса
 
-                elif key == ord("5"):
-                    nearby_pixels -= 10
-                elif key == ord("6"):
-                    nearby_pixels += 10
-                elif key == ord("7"):
-                    edge -= 2
-                elif key == ord("8"):
-                    edge += 2
+            key = cv2.waitKey(1)
+            if key == 27:  # esc
+                print("esc pressed")
+                cv2.destroyAllWindows()
+                pioneer_mini.land()
+                break
+            elif key == ord("5"):
+                change_near_by_pixels(-1)
+            elif key == ord("6"):
+                change_near_by_pixels(1)
+            elif key == ord("7"):
+                change_edge(-1)
+            elif key == ord("8"):
+                change_edge(1)
+            elif key == ord("1"):
+                pioneer_mini.arm()
+            elif key == ord("2"):
+                pioneer_mini.disarm()
+            elif key == ord("3"):
+                status = 1
+                time.sleep(2)
+                pioneer_mini.arm()
+                time.sleep(1)
+                pioneer_mini.takeoff()
+                time.sleep(2)
+            elif key == ord("4"):
+                pioneer_mini.land()
+                time.sleep(2)
+            elif key == ord("w"):
+                ch_3 = min_v_manual_wasd_control
+            elif key == ord("s"):
+                ch_3 = max_v_manual_wasd_control
+            elif key == ord("a"):
+                ch_4 = min_v_manual_wasd_control
+            elif key == ord("d"):
+                ch_4 = max_v_manual_wasd_control
+            elif key == ord("q"):
+                ch_2 = 2000
+            elif key == ord("e"):
+                ch_2 = 1000
+            elif key == ord("i"):
+                ch_1 = 2000
+            elif key == ord("k"):
+                ch_1 = 1000
+            elif key == ord("p"):
+                if status == 5:
+                    status = 3
+                elif status == 1:
+                    status = 2
+                else:
+                    status = 1  # выход из режима пилотирования
 
-                elif key == ord("1"):
-                    pioneer_mini.arm()
-                elif key == ord("2"):
-                    pioneer_mini.disarm()
-                elif key == ord("3"):
-                    time.sleep(2)
-                    pioneer_mini.arm()
-                    time.sleep(1)
-                    pioneer_mini.takeoff()
-                    time.sleep(2)
-                elif key == ord("4"):
-                    time.sleep(2)
-                    pioneer_mini.land()
-                    time.sleep(2)
-                elif key == ord("w"):
-                    ch_3 = min_v
-                elif key == ord("s"):
-                    ch_3 = max_v
-                elif key == ord("a"):
-                    ch_4 = min_v
-                elif key == ord("d"):
-                    ch_4 = max_v
-                elif key == ord("q"):
-                    ch_2 = 2000
-                elif key == ord("e"):
-                    ch_2 = 1000
-                elif key == ord("i"):
-                    ch_1 = 2000
-                elif key == ord("k"):
-                    ch_1 = 1000
-                elif key == ord("p"):
-                    is_control_by_PID = not is_control_by_PID
+            print(status, ch_1, ch_2, ch_3, ch_4)
 
-                # print("ch3, ch2", ch_3, ch_2)
+            pioneer_mini.send_rc_channels(
+                channel_1=ch_1,
+                channel_2=ch_2,
+                channel_3=ch_3,
+                channel_4=ch_4,
+                channel_5=ch_5,
+            )
 
-                pioneer_mini.send_rc_channels(
-                    channel_1=ch_1,
-                    channel_2=ch_2,
-                    channel_3=ch_3,
-                    channel_4=ch_4,
-                    channel_5=ch_5,
-                )
-
-                cv2.imshow('live from your pc :)', frame_after_thresh)
-                cv2.imshow('without changes', frame)
+            cv2.imshow('line view', frame_after_thresh)
+            cv2.imshow('original image', frame)
     except Exception:
-
         print(traceback.format_exc())
     finally:
         time.sleep(1)
@@ -185,3 +160,7 @@ if __name__ == "__main__":
 
         pioneer_mini.close_connection()
         del pioneer_mini
+
+
+if __name__ == '__main__':
+    main()
