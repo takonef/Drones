@@ -13,6 +13,8 @@ def recognize_marker_get_center(frame, marker_id):
     if ids is None:
         return None, None
 
+    cv2.aruco.drawDetectedMarkers(frame, corners, ids)
+
     if len(ids) != 1 or ids[0] != marker_id:
         return None, None
 
@@ -22,25 +24,32 @@ def recognize_marker_get_center(frame, marker_id):
     return marker_x_center, marker_y_center
 
 
-def is_marker_in_center_area(frame, marker_id, frame_center_x, frame_center_y):
-    marker_x_center, maker_y_center = recognize_marker_get_center(frame, marker_id)
+def is_marker_in_center_area_by_id(frame, marker_id, frame_center_x, frame_center_y):
+    marker_x_center, marker_y_center = recognize_marker_get_center(frame, marker_id)
+    return is_marker_in_center_area(frame, marker_x_center, marker_y_center, frame_center_x, frame_center_y)
 
+def is_marker_in_center_area(frame, marker_xc, marker_yc, frame_center_x, frame_center_y):
     window_for_marker = 50  # окно для маркера в пикселях
+
+    res = False
+    rect_color = (0, 0, 0) # black
+
+    if marker_xc is not None:
+        if (abs(marker_xc - frame_center_x) <= window_for_marker and
+                abs(marker_yc - frame_center_y) <= window_for_marker):
+            res = True
+            rect_color = (0, 255, 0)
+        else:
+            rect_color = (0, 0, 255)
+
     cv2.rectangle(frame, (frame_center_x - window_for_marker, frame_center_y - window_for_marker),
-                  (frame_center_x + window_for_marker, frame_center_y + window_for_marker), (0, 0, 255), 2)
-
-    if marker_x_center is None:
-        return False
-
-    if (abs(marker_x_center - frame_center_x) <= window_for_marker and
-            abs(maker_y_center - frame_center_y) <= window_for_marker):
-        return True
-    else:
-        return False
+                  (frame_center_x + window_for_marker, frame_center_y + window_for_marker), rect_color, 2)
+    return res
 
 
-def stabilize_at_marker(frame, frame_center_x, frame_center_y):
-    frame, dVx_aruco, dVy_aruco, dx, dy, ids = aruco_detected(frame, frame_center_x, frame_center_y)
+
+def stabilize_at_marker(frame, marker_id, frame_center_x, frame_center_y):
+    frame, dVx_aruco, dVy_aruco, dx, dy, marker_xc, marker_yc = aruco_detected(frame, marker_id, frame_center_x, frame_center_y)
     ch_3 = ch_4 = 1500
     if dVx_aruco is not None and dVy_aruco is not None:
         color_for_arrow = (255, 0, 0) # blue
@@ -49,25 +58,21 @@ def stabilize_at_marker(frame, frame_center_x, frame_center_y):
         ch_3 += int(dVy_aruco)
         ch_4 += int(dVx_aruco)
 
-    return frame, ch_3, ch_4
+    return frame, ch_3, ch_4, marker_xc, marker_yc
 
 
-def aruco_detected(frame, xc, yc):
+def aruco_detected(frame, marker_id, xc, yc):
     # TODO использовать функцию recognize_marker_get_center
     global detector
-    frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    corners, ids, rejected = detector.detectMarkers(frame_gray)
+    marker_xc, marker_yc = recognize_marker_get_center(frame, marker_id)
     dVy_aruco = None
     dVx_aruco = None
     dx, dy = 0, 0
-    if ids is not None:
-        frame = cv2.aruco.drawDetectedMarkers(frame, corners, ids)
-        aruco_xc = (corners[0][0][0][0] + corners[0][0][1][0] + corners[0][0][2][0] + corners[0][0][3][0]) // 4
-        aruco_yc = (corners[0][0][0][1] + corners[0][0][1][1] + corners[0][0][2][1] + corners[0][0][3][1]) // 4
-        dx = int(-(xc - aruco_xc))
-        dy = int(-(yc - aruco_yc))
+    if marker_xc is not None:
+        dx = int(-(xc - marker_xc))
+        dy = int(-(yc - marker_yc))
 
-        dV_aruco = 120  # 200
+        dV_aruco = 150  # 200
         dVx_aruco = dV_aruco * (dx / xc)
         dVy_aruco = dV_aruco * (dy / xc)
 
@@ -82,4 +87,4 @@ def aruco_detected(frame, xc, yc):
             dVy_aruco = limit
         if dVy_aruco < -limit:
             dVy_aruco = -limit
-    return frame, dVx_aruco, dVy_aruco, dx, dy, ids
+    return frame, dVx_aruco, dVy_aruco, dx, dy, marker_xc, marker_yc
