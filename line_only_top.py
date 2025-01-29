@@ -73,7 +73,7 @@ def get_black_line(frame):
 
     bw_frame = cv2.cvtColor(bw_frame, cv2.COLOR_GRAY2BGR)
 
-    arrow_color = (0, 0, 255)
+    arrow_color = (0, 0, 255) # green
     bw_frame = cv2.arrowedLine(bw_frame, (start_circle_x, start_circle_y), (target_circle_x, target_circle_y),
                                arrow_color, 2)
 
