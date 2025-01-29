@@ -2,14 +2,15 @@ import cv2
 import numpy as np
 import socket
 
-ip='192.168.4.1'
-port=8888
-video_buffer_size=65000
-timeout=0.5
+ip = '192.168.4.1'
+port = 8888
+video_buffer_size = 65000
+timeout = 0.5
 tcp = None
 udp = None
 raw_video_frame = bytes()
 connected = False
+
 
 def new_tcp():
     """Returns new TCP socket"""
@@ -18,12 +19,14 @@ def new_tcp():
     sock.settimeout(timeout)
     return sock
 
+
 def new_udp():
     """Returns new UDP socket"""
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.settimeout(timeout)
     return sock
+
 
 def connect():
     global tcp, udp, connected
@@ -49,6 +52,7 @@ def disconnect():
     if udp is not None:
         udp.close()
         udp = None
+
 
 def get_frame():
     global connected, video_buffer_size
@@ -76,6 +80,7 @@ def get_frame():
             print('Camera DISCONNECTED')
         return None
 
+
 def get_cv_frame():
     """
     get cv_frame
@@ -86,4 +91,3 @@ def get_cv_frame():
     if frame is not None:
         frame = cv2.imdecode(np.frombuffer(frame, dtype=np.uint8), cv2.IMREAD_COLOR)
     return frame
-
