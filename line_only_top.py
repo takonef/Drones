@@ -8,11 +8,11 @@ EDGE = 15
 
 def fight_follow_line(frame, frame_center_x):
     target_circle_x, frame_after_thresh, dx_center, dangle = get_black_line(frame)
-    dV_max = 200  # 300
+    dV_max = 150  # 300
     dVx = dV_max * (dx_center / frame_center_x)
     # print(dangle)
 
-    dVrot_k = 150  # 250
+    dVrot_k = 230  # 250
 
     limit = 100
     if dVx > limit:
