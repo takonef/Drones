@@ -43,7 +43,7 @@ def stabilize_at_marker(frame, frame_center_x, frame_center_y):
     frame, dVx_aruco, dVy_aruco, dx, dy, ids = aruco_detected(frame, frame_center_x, frame_center_y)
     ch_3 = ch_4 = 1500
     if dVx_aruco is not None and dVy_aruco is not None:
-        color_for_arrow = (255, 0, 0)
+        color_for_arrow = (255, 0, 0) # blue
         frame = cv2.arrowedLine(frame, (frame_center_x, frame_center_y),
                                 (frame_center_x + dx, frame_center_y + dy), color_for_arrow, 2)
         ch_3 += int(dVy_aruco)
