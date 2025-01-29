@@ -40,7 +40,13 @@ def main():
     th1 = threading.Thread(target=camera_start)
     th1.start()
 
-    status = 0  # 0 -- до взлёта, 1 -- до включения режима автономного пилотирования, 2 -- стабилизация над маркером старта, 3 -- полёт по линии, 4 -- найден маркер финиша в центре изображения, посадка на него, 5 -- закончилась чёрная линия во время полёта
+    status = 0  
+    # 0 -- до взлёта, 
+    # 1 -- до включения режима автономного пилотирования, 
+    # 2 -- стабилизация над маркером старта, 
+    # 3 -- полёт по линии, 
+    # 4 -- найден маркер финиша в центре изображения, посадка на него, 
+    # 5 -- закончилась чёрная линия во время полёта
 
     try:
         while True:
@@ -57,7 +63,7 @@ def main():
 
             frame_center_y, frame_center_x, _ = map(lambda x: x // 2 - 1, frame.shape)
 
-            status_circle_color = (0, 0, 255)
+            status_circle_color = (0, 0, 255) # red
             start_marker_id = 0
             finish_marker_id = 1
 
@@ -68,12 +74,12 @@ def main():
 
             match status:
                 case 2:
-                    status_circle_color = (0, 255, 255)
+                    status_circle_color = (0, 255, 255) # yellow
                     frame, ch_3, ch_4 = stabilize_at_marker(frame, frame_center_x, frame_center_y)
                     if is_marker_in_center_area(frame, start_marker_id, frame_center_x, frame_center_y):
                         status = 3
                 case 4:
-                    status_circle_color = (0, 255, 255)
+                    status_circle_color = (0, 255, 255) # yellow
                     frame, ch_3, ch_4 = stabilize_at_marker(frame, frame_center_x, frame_center_y)
                     ch_1 = 1400  # вниз
                     if pioneer_mini.get_dist_sensor_data(get_last_received=True) < min_drone_flight_height:
@@ -81,7 +87,7 @@ def main():
                         time.sleep(1)
                         pioneer_mini.disarm()
                 case 3:
-                    status_circle_color = (0, 255, 0)
+                    status_circle_color = (0, 255, 0) # green
                     frame_after_thresh, status, ch_2, ch_3, ch_4 = fight_follow_line(global_frame, frame_center_x)
                     if is_marker_in_center_area(frame, finish_marker_id, frame_center_x, frame_center_y):
                         status = 4
