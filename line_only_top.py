@@ -8,11 +8,11 @@ EDGE = 15
 
 def fight_follow_line(frame, frame_center_x):
     target_circle_x, frame_after_thresh, dx_center, dangle = get_black_line(frame)
-    dV_max = 200  # 300
+    dV_max = 150  # 300
     dVx = dV_max * (dx_center / frame_center_x)
     # print(dangle)
 
-    dVrot_k = 150  # 250
+    dVrot_k = 230  # 250
 
     limit = 100
     if dVx > limit:
@@ -73,7 +73,7 @@ def get_black_line(frame):
 
     bw_frame = cv2.cvtColor(bw_frame, cv2.COLOR_GRAY2BGR)
 
-    arrow_color = (0, 0, 255)
+    arrow_color = (0, 0, 255) # green
     bw_frame = cv2.arrowedLine(bw_frame, (start_circle_x, start_circle_y), (target_circle_x, target_circle_y),
                                arrow_color, 2)
 

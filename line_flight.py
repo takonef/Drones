@@ -24,12 +24,20 @@ def main():
         """
     1 -- arm
     2 -- disarm
-    3 -- takeoff
+    3 -- arm, takeoff
     4 -- land
 
     ↶q  w↑  e↷    i-↑
     ←a      d→     k-↓
-        s↓"""
+        s↓
+
+    p -- change status
+
+    5 -- line edge -1 px
+    6 -- line edge +1 px
+    7 -- thresh -1
+    8 -- thresh +1
+    """
     )
 
     pioneer_mini = Pioneer()
@@ -40,9 +48,17 @@ def main():
     th1 = threading.Thread(target=camera_start)
     th1.start()
 
-    status = 0  # 0 -- до взлёта, 1 -- до включения режима автономного пилотирования, 2 -- стабилизация над маркером старта, 3 -- полёт по линии, 4 -- найден маркер финиша в центре изображения, посадка на него, 5 -- закончилась чёрная линия во время полёта
+    status = 0
+    # 0 -- до взлёта,
+    # 1 -- до включения режима автономного пилотирования,
+    # 2 -- стабилизация над маркером старта,
+    # 3 -- полёт по линии,
+    # 4 -- найден маркер финиша в центре изображения, посадка на него,
+    # 5 -- закончилась чёрная линия во время полёта
 
     try:
+        start_marker_id = 0
+        finish_marker_id = 1
         while True:
             if global_frame is None:
                 continue
@@ -57,9 +73,7 @@ def main():
 
             frame_center_y, frame_center_x, _ = map(lambda x: x // 2 - 1, frame.shape)
 
-            status_circle_color = (0, 0, 255)
-            start_marker_id = 0
-            finish_marker_id = 1
+            status_circle_color = (0, 0, 255)  # red
 
             min_drone_flight_height = 0.2
 
@@ -68,25 +82,27 @@ def main():
 
             match status:
                 case 2:
-                    status_circle_color = (0, 255, 255)
-                    frame, ch_3, ch_4 = stabilize_at_marker(frame, frame_center_x, frame_center_y)
-                    if is_marker_in_center_area(frame, start_marker_id, frame_center_x, frame_center_y):
+                    status_circle_color = (0, 255, 255)  # yellow
+                    frame, ch_3, ch_4, marker_xc, marker_yc = stabilize_at_marker(frame, start_marker_id, frame_center_x, frame_center_y)
+                    if is_marker_in_center_area(frame, marker_xc, marker_yc, frame_center_x, frame_center_y):
                         status = 3
                 case 4:
-                    status_circle_color = (0, 255, 255)
-                    frame, ch_3, ch_4 = stabilize_at_marker(frame, frame_center_x, frame_center_y)
+                    status_circle_color = (0, 255, 255)  # yellow
+                    frame, ch_3, ch_4, marker_xc, marker_yc = stabilize_at_marker(frame, finish_marker_id, frame_center_x, frame_center_y)
                     ch_1 = 1400  # вниз
                     if pioneer_mini.get_dist_sensor_data(get_last_received=True) < min_drone_flight_height:
                         pioneer_mini.land()
                         time.sleep(1)
                         pioneer_mini.disarm()
                 case 3:
-                    status_circle_color = (0, 255, 0)
+                    status_circle_color = (0, 255, 0)  # green
                     frame_after_thresh, status, ch_2, ch_3, ch_4 = fight_follow_line(global_frame, frame_center_x)
-                    if is_marker_in_center_area(frame, finish_marker_id, frame_center_x, frame_center_y):
+                    if is_marker_in_center_area_by_id(frame, finish_marker_id, frame_center_x, frame_center_y):
                         status = 4
 
             cv2.circle(frame, (10, 10), 10, status_circle_color, cv2.FILLED)  # отрисовка статуса
+            cv2.putText(frame, str(status), (5, 15), cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 0, 0))
+
 
             key = cv2.waitKey(1)
             if key == 27:  # esc
@@ -140,7 +156,7 @@ def main():
                 else:
                     status = 1  # выход из режима пилотирования
 
-            print(status, ch_1, ch_2, ch_3, ch_4)
+            #print(status, ch_1, ch_2, ch_3, ch_4)
 
             pioneer_mini.send_rc_channels(
                 channel_1=ch_1,
